@@ -143,25 +143,42 @@ def train_models():
     with open('models/vectorizer.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
     print("✓ Models saved to 'models' directory")
-
 def load_models():
     """
     Load pre-trained models from disk
     """
     global nb_model, svm_model, vectorizer
     
+    # Define the base path for the models folder relative to the current working directory
+    # Since Render's root is set to 'backend', we just look in 'models/'
+    base_model_path = os.path.join(os.getcwd(), 'models')
+    
     try:
         print("Loading pre-trained models...")
-        with open('models/nb_model.pkl', 'rb') as f:
+        
+        # Construct the full file paths
+        nb_path = os.path.join(base_model_path, 'nb_model.pkl')
+        svm_path = os.path.join(base_model_path, 'svm_model.pkl')
+        vec_path = os.path.join(base_model_path, 'vectorizer.pkl')
+
+        # Check if the files exist before trying to open them
+        if not os.path.exists(nb_path):
+            # This will trigger the FileNotFoundError exception
+            raise FileNotFoundError(f"Model file not found at: {nb_path}")
+
+        with open(nb_path, 'rb') as f:
             nb_model = pickle.load(f)
-        with open('models/svm_model.pkl', 'rb') as f:
+        with open(svm_path, 'rb') as f:
             svm_model = pickle.load(f)
-        with open('models/vectorizer.pkl', 'rb') as f:
+        with open(vec_path, 'rb') as f:
             vectorizer = pickle.load(f)
+
         print("✓ Models loaded successfully")
         return True
+        
     except FileNotFoundError:
         print("Models not found. Training new models...")
+        # Your models weren't found, so it attempts to train them
         train_models()
         return True
     except Exception as e:
@@ -264,6 +281,6 @@ if __name__ == '__main__':
     print("\n" + "="*60)
     
     # Run the Flask app
-import os
+
 port = int(os.environ.get("PORT", 10000))
 app.run(host='0.0.0.0', port=port)
