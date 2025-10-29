@@ -91,7 +91,8 @@ def train_models():
     print("Loading dataset...")
     try:
         # Try to load the dataset
-        df = pd.read_csv('data/emails.csv')
+       # New, robust line:  
+        df = pd.read_csv(os.path.join(os.getcwd(), 'data', 'emails.csv'))
         print(f"Dataset loaded: {len(df)} emails")
         
         # Handle both 'label' and 'lable' column names
