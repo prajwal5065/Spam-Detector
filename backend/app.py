@@ -31,26 +31,49 @@ stemmer = PorterStemmer()
 stop_words = set(stopwords.words('english'))
 
 def preprocess_text(text):
+    """
+    Preprocess email text: lowercase, remove punctuation, numbers, stopwords, stem
+    """
+    # Convert to lowercase
     text = text.lower()
+    
+    # Remove URLs
     text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    
+    # Remove email addresses
     text = re.sub(r'\S+@\S+', '', text)
+    
+    # Remove numbers
     text = re.sub(r'\d+', '', text)
+    
+    # Remove punctuation
     text = text.translate(str.maketrans('', '', string.punctuation))
+    
+    # Tokenize and remove stopwords
     tokens = text.split()
     tokens = [word for word in tokens if word not in stop_words and len(word) > 2]
+    
+    # Stem words
     tokens = [stemmer.stem(word) for word in tokens]
+    
     return ' '.join(tokens)
 
 def extract_features(text):
+    """
+    Extract additional features from email text
+    """
     spam_keywords = [
         'free', 'win', 'winner', 'cash', 'prize', 'claim', 'urgent', 'congratulations',
         'click here', 'limited time', 'act now', 'offer', 'discount', 'guarantee',
         'money', 'credit', 'loan', 'viagra', 'pharmacy', 'weight loss', 'mlm'
     ]
+    
     lower_text = text.lower()
     found_keywords = [keyword for keyword in spam_keywords if keyword in lower_text]
+    
     exclamation_count = text.count('!')
     all_caps_words = len([word for word in text.split() if len(word) > 2 and word.isupper()])
+    
     return {
         'keywordCount': len(found_keywords),
         'exclamationMarks': exclamation_count,
@@ -60,17 +83,28 @@ def extract_features(text):
     }
 
 def train_models():
+    """
+    Train both Naive Bayes and SVM models on the dataset
+    """
     global nb_model, svm_model, vectorizer
+    
     print("Loading dataset...")
     try:
-        df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'emails.csv'))
+        # Try to load the dataset
+       # New, robust line:  
+        df = pd.read_csv(os.path.join(os.getcwd(), 'data', 'emails.csv'))
         print(f"Dataset loaded: {len(df)} emails")
+        
+        # Handle both 'label' and 'lable' column names
         if 'lable' in df.columns:
             df.rename(columns={'lable': 'label'}, inplace=True)
+        
         emails = df['text'].tolist()
         labels = df['label'].tolist()
+        
     except FileNotFoundError:
         print("Warning: data/emails.csv not found. Using sample data for demo.")
+        # Fallback sample data
         emails = [
             "Congratulations! You've won a free iPhone. Click here to claim now!",
             "Hi John, can we schedule a meeting tomorrow at 3pm?",
@@ -82,49 +116,70 @@ def train_models():
             "Please find attached the quarterly financial statements.",
         ]
         labels = ['spam', 'ham', 'spam', 'ham', 'spam', 'ham', 'spam', 'ham']
+    
     print("Preprocessing text...")
     processed_emails = [preprocess_text(email) for email in emails]
+    
     print("Training models...")
+    # Initialize vectorizer
     vectorizer = TfidfVectorizer(max_features=3000, min_df=2, max_df=0.8)
     X = vectorizer.fit_transform(processed_emails)
+    
+    # Train Naive Bayes
     nb_model = MultinomialNB(alpha=1.0)
     nb_model.fit(X, labels)
     print("✓ Naive Bayes model trained")
+    
+    # Train SVM
     svm_model = SVC(kernel='linear', C=1.0, probability=True, random_state=42)
     svm_model.fit(X, labels)
     print("✓ SVM model trained")
-
-    # ✅ Use absolute path relative to this file
-    model_dir = os.path.join(os.path.dirname(__file__), 'models')
-    os.makedirs(model_dir, exist_ok=True)
-    with open(os.path.join(model_dir, 'nb_model.pkl'), 'wb') as f:
+    
+    # Save models
+    os.makedirs('models', exist_ok=True)
+    with open('models/nb_model.pkl', 'wb') as f:
         pickle.dump(nb_model, f)
-    with open(os.path.join(model_dir, 'svm_model.pkl'), 'wb') as f:
+    with open('models/svm_model.pkl', 'wb') as f:
         pickle.dump(svm_model, f)
-    with open(os.path.join(model_dir, 'vectorizer.pkl'), 'wb') as f:
+    with open('models/vectorizer.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
     print("✓ Models saved to 'models' directory")
-
 def load_models():
+    """
+    Load pre-trained models from disk
+    """
     global nb_model, svm_model, vectorizer
-    model_dir = os.path.join(os.path.dirname(__file__), 'models')
+    
+    # Define the base path for the models folder relative to the current working directory
+    # Since Render's root is set to 'backend', we just look in 'models/'
+    base_model_path = os.path.join(os.getcwd(), 'models')
+    
     try:
         print("Loading pre-trained models...")
-        nb_path = os.path.join(model_dir, 'nb_model.pkl')
-        svm_path = os.path.join(model_dir, 'svm_model.pkl')
-        vec_path = os.path.join(model_dir, 'vectorizer.pkl')
+        
+        # Construct the full file paths
+        nb_path = os.path.join(base_model_path, 'nb_model.pkl')
+        svm_path = os.path.join(base_model_path, 'svm_model.pkl')
+        vec_path = os.path.join(base_model_path, 'vectorizer.pkl')
+
+        # Check if the files exist before trying to open them
         if not os.path.exists(nb_path):
+            # This will trigger the FileNotFoundError exception
             raise FileNotFoundError(f"Model file not found at: {nb_path}")
+
         with open(nb_path, 'rb') as f:
             nb_model = pickle.load(f)
         with open(svm_path, 'rb') as f:
             svm_model = pickle.load(f)
         with open(vec_path, 'rb') as f:
             vectorizer = pickle.load(f)
+
         print("✓ Models loaded successfully")
         return True
+        
     except FileNotFoundError:
         print("Models not found. Training new models...")
+        # Your models weren't found, so it attempts to train them
         train_models()
         return True
     except Exception as e:
@@ -133,22 +188,45 @@ def load_models():
 
 @app.route('/analyze', methods=['POST'])
 def analyze_email():
+    """
+    API endpoint to analyze email text
+    """
     try:
         data = request.get_json()
         email_text = data.get('emailText', '')
         model_type = data.get('model', 'naive_bayes')
+        
         if not email_text:
             return jsonify({'error': 'No email text provided'}), 400
+        
+        # Preprocess the email
         processed_text = preprocess_text(email_text)
+        
+        # Vectorize the text
         X = vectorizer.transform([processed_text])
+        
+        # Select model
         model = nb_model if model_type == 'naive_bayes' else svm_model
+        
+        # Make prediction
         prediction = model.predict(X)[0]
+        
+        # Get prediction probability (confidence)
         if hasattr(model, 'predict_proba'):
             proba = model.predict_proba(X)[0]
-            confidence = proba[1] * 100 if prediction == 'spam' else proba[0] * 100
+            # Get confidence for the predicted class
+            if prediction == 'spam':
+                confidence = proba[1] * 100  # Probability of spam
+            else:
+                confidence = proba[0] * 100  # Probability of ham
         else:
-            confidence = 85.0
+            # For models without predict_proba, use decision function
+            confidence = 85.0  # Default confidence
+        
+        # Extract additional features
         features = extract_features(email_text)
+        
+        # Prepare response
         response = {
             'analysis': {
                 'isSpam': prediction == 'spam',
@@ -158,13 +236,18 @@ def analyze_email():
                 'model_used': model_type
             }
         }
+        
         return jsonify(response), 200
+        
     except Exception as e:
         print(f"Error in analyze_email: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    """
+    Health check endpoint
+    """
     return jsonify({
         'status': 'healthy',
         'models_loaded': nb_model is not None and svm_model is not None
@@ -172,6 +255,9 @@ def health_check():
 
 @app.route('/retrain', methods=['POST'])
 def retrain_models():
+    """
+    Endpoint to retrain models with new data
+    """
     try:
         train_models()
         return jsonify({'message': 'Models retrained successfully'}), 200
@@ -182,7 +268,10 @@ if __name__ == '__main__':
     print("="*60)
     print("SPAM DETECTOR API SERVER")
     print("="*60)
+    
+    # Load or train models on startup
     load_models()
+    
     print("\n" + "="*60)
     print("🚀 Server starting on http://localhost:5000")
     print("="*60)
@@ -191,6 +280,8 @@ if __name__ == '__main__':
     print("  GET  /health     - Health check")
     print("  POST /retrain    - Retrain models")
     print("\n" + "="*60)
+    
+    # Run the Flask app
 
 port = int(os.environ.get("PORT", 10000))
 app.run(host='0.0.0.0', port=port)
