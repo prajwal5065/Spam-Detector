@@ -70,7 +70,7 @@ const SpamDetectorWebsite = () => {
     setIsAnalyzing(true);
     setResult(null);
     
-    const API_URL = 'https://spam-detector-api-50o3.onrender.com';
+    const API_URL = 'https://spam-detector-api-50u3.onrender.com/analyze';
 
     try {
       const response = await fetch(API_URL, {
