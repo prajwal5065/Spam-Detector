@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-
+from config import DATA_PATH
 # Download required NLTK data
 try:
     nltk.data.find('corpora/stopwords')
@@ -92,7 +92,7 @@ def train_models():
     try:
         # Try to load the dataset
        # New, robust line:  
-        df = pd.read_csv(os.path.join(os.getcwd(), 'data', 'emails.csv'))
+        df = pd.read_csv(DATA_PATH)
         print(f"Dataset loaded: {len(df)} emails")
         
         # Handle both 'label' and 'lable' column names
