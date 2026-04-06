@@ -10,9 +10,35 @@
 
 **An intelligent email spam detection system powered by Naive Bayes & SVM machine learning models, served via a Flask REST API with a modern frontend interface.**
 
-[🚀 Demo](#demo) · [📖 Documentation](#how-it-works) · [🛠️ Installation](#installation) · [🤝 Contributing](#contributing)
+[🚀 Demo](#-demo) · [📖 Documentation](#-how-it-works) · [🛠️ Installation](#-installation) · [🤝 Contributing](#-contributing)
 
 </div>
+
+---
+
+## 🖥️ Demo
+
+### Main Interface — Analyze Email
+![Main Interface](screenshots/screenshot_205.png)
+> Paste any email content, choose between **Naive Bayes** or **SVM** model, and hit **Analyze**. Model stats (98.7% accuracy, 97.2% precision, 5574 training samples) are displayed live on the right panel.
+
+---
+
+### How It Works Panel + Spam Indicators
+![How It Works](screenshots/screenshot_206.png)
+> The sidebar explains the 3-step ML pipeline: **Text Preprocessing → Feature Extraction (TF-IDF) → ML Classification**, plus a list of common spam signal patterns the model detects.
+
+---
+
+### Analysis Result — ⚠️ SPAM DETECTED
+![Spam Result](screenshots/screenshot_207.png)
+> When spam is detected, the result card shows a **confidence score (88.3%)**, breakdown of spam signals (keywords, exclamation marks, CAPS words, text length), and highlights the exact **detected spam keywords** like `free`, `prize`, `claim`, `congratulations`, `click here`.
+
+---
+
+### Analysis Result — ✅ LEGITIMATE
+![Legitimate Result](screenshots/screenshot_208.png)
+> For clean emails, the result shows **LEGITIMATE** with a high confidence score (97.2%) and zero spam keywords or CAPS words detected.
 
 ---
 
@@ -217,12 +243,12 @@ Classifies an email as spam or ham.
 
 ## 📊 Model Performance
 
-| Model | Accuracy | Precision | Recall | F1-Score |
-|-------|----------|-----------|--------|----------|
-| Naive Bayes | ~97% | ~96% | ~95% | ~95% |
-| SVM | ~98% | ~98% | ~97% | ~97% |
+| Model | Accuracy | Precision | Training Dataset |
+|-------|----------|-----------|-----------------|
+| Naive Bayes | **98.7%** | **97.2%** | 5,574 SMS messages |
+| SVM | **98.7%** | **97.2%** | 5,574 SMS messages |
 
-> Models were trained and evaluated on the `emails.csv` dataset with an 80/20 train-test split.
+> Real metrics as shown in the live application dashboard. Models were trained on the `SMSSpamCollection.txt` dataset.
 
 ---
 
